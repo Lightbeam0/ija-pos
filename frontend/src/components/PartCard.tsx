@@ -1,3 +1,4 @@
+// frontend/src/components/PartCard.tsx
 import type { Part } from '../types';
 import { Plus, Package } from 'lucide-react';
 

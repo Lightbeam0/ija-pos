@@ -1,3 +1,4 @@
+// frontend/src/components/PosScreen.tsx
 import { usePosStore } from '../store/usePosStore';
 import TopBar from './TopBar';
 import SearchPanel from './SearchPanel';

@@ -1,3 +1,4 @@
+// frontend/src/components/CartItem.tsx
 import type { CartItem as CartItemType } from '../types';
 import { Minus, Plus, X } from 'lucide-react';
 

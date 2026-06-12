@@ -1,3 +1,4 @@
+// frontend/src/components/LoginScreen.tsx
 import { useState } from 'react';
 import { usePosStore } from '../store/usePosStore';
 import { api } from '../lib/api';

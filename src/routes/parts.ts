@@ -1,8 +1,21 @@
+// src/routes/parts.ts
 import { Router, Response } from 'express';
 import prisma from '../lib/prisma';
 import { AuthRequest } from '../middleware/auth';
 
 const router = Router();
+
+// Helper to serialize Decimal fields to numbers
+function serializePart(part: any) {
+  if (!part) return part;
+  if (Array.isArray(part)) return part.map(serializePart);
+  
+  return {
+    ...part,
+    sellingPrice: part.sellingPrice ? Number(part.sellingPrice) : part.sellingPrice,
+    costPrice: part.costPrice ? Number(part.costPrice) : part.costPrice,
+  };
+}
 
 // GET /api/parts/search?q=brake+pad
 router.get('/search', async (req: AuthRequest, res: Response): Promise<void> => {
@@ -38,12 +51,12 @@ router.get('/search', async (req: AuthRequest, res: Response): Promise<void> => 
       },
       take: 20,
       orderBy: [
-        { quantity: 'desc' },   // In-stock items first
+        { quantity: 'desc' },
         { name: 'asc' },
       ],
     });
 
-    res.json(parts);
+    res.json(serializePart(parts));
   } catch (error) {
     console.error('Search error:', error);
     res.status(500).json({ error: 'Search failed' });
@@ -81,7 +94,7 @@ router.get('/barcode/:code', async (req: AuthRequest, res: Response): Promise<vo
       return;
     }
 
-    res.json(part);
+    res.json(serializePart(part));
   } catch (error) {
     console.error('Barcode lookup error:', error);
     res.status(500).json({ error: 'Lookup failed' });
@@ -114,7 +127,7 @@ router.get('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
       return;
     }
 
-    res.json(part);
+    res.json(serializePart(part));
   } catch (error) {
     console.error('Part detail error:', error);
     res.status(500).json({ error: 'Failed to fetch part' });
@@ -154,13 +167,8 @@ router.get('/category/:categoryId', async (req: AuthRequest, res: Response): Pro
     ]);
 
     res.json({
-      parts,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
+      parts: serializePart(parts),
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
   } catch (error) {
     console.error('Category parts error:', error);
@@ -168,7 +176,7 @@ router.get('/category/:categoryId', async (req: AuthRequest, res: Response): Pro
   }
 });
 
-// GET /api/parts - List all parts with pagination
+// GET /api/parts
 router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const page = parseInt(req.query.page as string) || 1;
@@ -198,13 +206,8 @@ router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
     ]);
 
     res.json({
-      parts,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
+      parts: serializePart(parts),
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
   } catch (error) {
     console.error('Parts list error:', error);

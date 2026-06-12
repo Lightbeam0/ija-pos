@@ -1,3 +1,4 @@
+// frontend/src/store/usePosStore.ts
 import { create } from 'zustand';
 import type { Part, CartItem, Sale } from '../types';
 

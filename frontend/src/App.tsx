@@ -1,3 +1,4 @@
+// frontend/src/App.tsx
 import { useEffect } from 'react';
 import { usePosStore } from './store/usePosStore.ts';
 import { api } from './lib/api';

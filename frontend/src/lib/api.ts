@@ -1,3 +1,4 @@
+// frontend/src/lib/api.ts
 const API_BASE = '/api';
 
 async function request(endpoint: string, options: RequestInit = {}) {

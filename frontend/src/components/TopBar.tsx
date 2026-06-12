@@ -1,3 +1,4 @@
+// frontend/src/components/TopBar.tsx
 import { useEffect, useState } from 'react';
 import { usePosStore } from '../store/usePosStore';
 import { api } from '../lib/api';

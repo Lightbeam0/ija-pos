@@ -1,3 +1,4 @@
+// src/routes/dashboard.ts
 import { Router, Response } from 'express';
 import prisma from '../lib/prisma';
 import { AuthRequest } from '../middleware/auth';

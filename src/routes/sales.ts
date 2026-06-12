@@ -1,3 +1,4 @@
+// src/routes/sales.ts
 import { Router, Response } from 'express';
 import { z } from 'zod';
 import prisma from '../lib/prisma';

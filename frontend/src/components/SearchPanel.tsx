@@ -1,3 +1,4 @@
+// frontend/src/components/SearchPanel.tsx
 import { useEffect, useRef } from 'react';
 import { usePosStore } from '../store/usePosStore';
 import { api } from '../lib/api';
