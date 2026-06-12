@@ -1,0 +1,108 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(uuid()) @db.Uuid
+  name      String    @db.VarChar(100)
+  pin       String    @db.VarChar(60)  // Changed from Char(4) to VarChar(60) for bcrypt hash
+  role      String    @default("staff") @db.VarChar(20)
+  isActive  Boolean   @default(true) @map("is_active")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  sales     Sale[]
+
+  @@map("users")
+}
+
+model Category {
+  id        String     @id @default(uuid()) @db.Uuid
+  name      String     @db.VarChar(100)
+  slug      String     @unique @db.VarChar(100)
+  parentId  String?    @map("parent_id") @db.Uuid
+  sortOrder Int        @default(0) @map("sort_order")
+  createdAt DateTime   @default(now()) @map("created_at")
+  parent    Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children  Category[] @relation("CategoryHierarchy")
+  parts     Part[]
+
+  @@map("categories")
+}
+
+model Brand {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at")
+  parts     Part[]
+
+  @@map("brands")
+}
+
+model Part {
+  id              String    @id @default(uuid()) @db.Uuid
+  sku             String    @unique @db.VarChar(50)
+  name            String    @db.VarChar(255)
+  description     String?   @db.Text
+  brandId         String?   @map("brand_id") @db.Uuid
+  categoryId      String?   @map("category_id") @db.Uuid
+  costPrice       Decimal   @default(0) @map("cost_price") @db.Decimal(10, 2)
+  sellingPrice    Decimal   @map("selling_price") @db.Decimal(10, 2)
+  quantity        Int       @default(0)
+  minQuantity     Int       @default(3) @map("min_quantity")
+  locationInStore String?   @map("location_in_store") @db.VarChar(50)
+  barcode         String?   @unique @db.VarChar(100)
+  isActive        Boolean   @default(true) @map("is_active")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  brand           Brand?    @relation(fields: [brandId], references: [id])
+  category        Category? @relation(fields: [categoryId], references: [id])
+  saleItems       SaleItem[]
+
+  @@index([sku])
+  @@index([barcode])
+  @@index([categoryId])
+  @@index([brandId])
+  @@index([isActive])
+  @@map("parts")
+}
+
+model Sale {
+  id               String     @id @default(uuid()) @db.Uuid
+  invoiceNumber    String     @unique @map("invoice_number") @db.VarChar(20)
+  userId           String     @map("user_id") @db.Uuid
+  subtotal         Decimal    @db.Decimal(10, 2)
+  discountAmount   Decimal    @default(0) @map("discount_amount") @db.Decimal(10, 2)
+  taxRate          Decimal    @default(0.08) @map("tax_rate") @db.Decimal(4, 3)
+  taxAmount        Decimal    @map("tax_amount") @db.Decimal(10, 2)
+  total            Decimal    @db.Decimal(10, 2)
+  paymentMethod    String     @map("payment_method") @db.VarChar(20)
+  paymentReceived  Decimal?   @map("payment_received") @db.Decimal(10, 2)
+  changeGiven      Decimal?   @map("change_given") @db.Decimal(10, 2)
+  notes            String?    @db.Text
+  createdAt        DateTime   @default(now()) @map("created_at")
+  user             User       @relation(fields: [userId], references: [id])
+  items            SaleItem[]
+
+  @@index([createdAt(sort: Desc)])
+  @@index([invoiceNumber])
+  @@map("sales")
+}
+
+model SaleItem {
+  id         String   @id @default(uuid()) @db.Uuid
+  saleId     String   @map("sale_id") @db.Uuid
+  partId     String   @map("part_id") @db.Uuid
+  quantity   Int
+  unitPrice  Decimal  @map("unit_price") @db.Decimal(10, 2)
+  createdAt  DateTime @default(now()) @map("created_at")
+  sale       Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  part       Part     @relation(fields: [partId], references: [id])
+
+  @@index([saleId])
+  @@map("sale_items")
+}
