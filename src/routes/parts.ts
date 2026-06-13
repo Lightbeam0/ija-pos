@@ -1,59 +1,44 @@
-// src/routes/parts.ts
 import { Router, Response } from 'express';
 import prisma from '../lib/prisma';
 import { AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
-// Helper to serialize Decimal fields to numbers
-function serializePart(part: any) {
+// Serialize Prisma Decimal fields to plain numbers
+function serializePart(part: any): any {
   if (!part) return part;
   if (Array.isArray(part)) return part.map(serializePart);
-  
   return {
     ...part,
-    sellingPrice: part.sellingPrice ? Number(part.sellingPrice) : part.sellingPrice,
-    costPrice: part.costPrice ? Number(part.costPrice) : part.costPrice,
+    sellingPrice: part.sellingPrice != null ? Number(part.sellingPrice) : part.sellingPrice,
+    costPrice:    part.costPrice    != null ? Number(part.costPrice)    : part.costPrice,
   };
 }
 
-// GET /api/parts/search?q=brake+pad
+// ─── GET /api/parts/search?q=brake+pad ───────────────────────────────────────
 router.get('/search', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { q } = req.query;
-    const searchTerm = (q as string)?.trim();
-
-    if (!searchTerm) {
-      res.json([]);
-      return;
-    }
+    const searchTerm = (req.query.q as string)?.trim();
+    if (!searchTerm) { res.json([]); return; }
 
     const parts = await prisma.part.findMany({
       where: {
         isActive: true,
         OR: [
-          { sku: { contains: searchTerm, mode: 'insensitive' } },
-          { barcode: { contains: searchTerm, mode: 'insensitive' } },
-          { name: { contains: searchTerm, mode: 'insensitive' } },
+          { sku:         { contains: searchTerm, mode: 'insensitive' } },
+          { barcode:     { contains: searchTerm, mode: 'insensitive' } },
+          { name:        { contains: searchTerm, mode: 'insensitive' } },
           { description: { contains: searchTerm, mode: 'insensitive' } },
         ],
       },
       select: {
-        id: true,
-        sku: true,
-        barcode: true,
-        name: true,
-        sellingPrice: true,
-        quantity: true,
-        locationInStore: true,
-        brand: { select: { id: true, name: true } },
+        id: true, sku: true, barcode: true, name: true,
+        sellingPrice: true, quantity: true, locationInStore: true,
+        brand:    { select: { id: true, name: true } },
         category: { select: { id: true, name: true } },
       },
       take: 20,
-      orderBy: [
-        { quantity: 'desc' },
-        { name: 'asc' },
-      ],
+      orderBy: [{ quantity: 'desc' }, { name: 'asc' }],
     });
 
     res.json(serializePart(parts));
@@ -63,37 +48,23 @@ router.get('/search', async (req: AuthRequest, res: Response): Promise<void> => 
   }
 });
 
-// GET /api/parts/barcode/:code
+// ─── GET /api/parts/barcode/:code ────────────────────────────────────────────
 router.get('/barcode/:code', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { code } = req.params;
-
     const part = await prisma.part.findFirst({
       where: {
         isActive: true,
-        OR: [
-          { barcode: code },
-          { sku: code },
-        ],
+        OR: [{ barcode: req.params.code }, { sku: req.params.code }],
       },
       select: {
-        id: true,
-        sku: true,
-        barcode: true,
-        name: true,
-        sellingPrice: true,
-        quantity: true,
-        locationInStore: true,
-        brand: { select: { id: true, name: true } },
+        id: true, sku: true, barcode: true, name: true,
+        sellingPrice: true, quantity: true, locationInStore: true,
+        brand:    { select: { id: true, name: true } },
         category: { select: { id: true, name: true } },
       },
     });
 
-    if (!part) {
-      res.status(404).json({ error: 'Part not found' });
-      return;
-    }
-
+    if (!part) { res.status(404).json({ error: 'Part not found' }); return; }
     res.json(serializePart(part));
   } catch (error) {
     console.error('Barcode lookup error:', error);
@@ -101,63 +72,26 @@ router.get('/barcode/:code', async (req: AuthRequest, res: Response): Promise<vo
   }
 });
 
-// GET /api/parts/:id
-router.get('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
-  try {
-    const part = await prisma.part.findUnique({
-      where: { id: req.params.id },
-      select: {
-        id: true,
-        sku: true,
-        barcode: true,
-        name: true,
-        description: true,
-        sellingPrice: true,
-        costPrice: true,
-        quantity: true,
-        minQuantity: true,
-        locationInStore: true,
-        brand: { select: { id: true, name: true } },
-        category: { select: { id: true, name: true } },
-      },
-    });
-
-    if (!part) {
-      res.status(404).json({ error: 'Part not found' });
-      return;
-    }
-
-    res.json(serializePart(part));
-  } catch (error) {
-    console.error('Part detail error:', error);
-    res.status(500).json({ error: 'Failed to fetch part' });
-  }
-});
-
-// GET /api/parts/category/:categoryId
+// ─── GET /api/parts/category/:categoryId ─────────────────────────────────────
+// FIX: this was defined AFTER /:id, so Express captured "category" as :id
+// and this handler was never reached. Moved above /:id.
 router.get('/category/:categoryId', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { categoryId } = req.params;
-    const page = parseInt(req.query.page as string) || 1;
+    const page  = parseInt(req.query.page  as string) || 1;
     const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
-    const skip = (page - 1) * limit;
+    const skip  = (page - 1) * limit;
 
-    const where: any = {
-      isActive: true,
-      categoryId: categoryId,
-    };
+    const where = { isActive: true, categoryId };
 
     const [parts, total] = await Promise.all([
       prisma.part.findMany({
         where,
         select: {
-          id: true,
-          sku: true,
-          name: true,
-          sellingPrice: true,
-          quantity: true,
-          locationInStore: true,
-          brand: { select: { id: true, name: true } },
+          id: true, sku: true, name: true,
+          sellingPrice: true, quantity: true, locationInStore: true,
+          brand:    { select: { id: true, name: true } },
+          category: { select: { id: true, name: true } },
         },
         skip,
         take: limit,
@@ -176,26 +110,44 @@ router.get('/category/:categoryId', async (req: AuthRequest, res: Response): Pro
   }
 });
 
-// GET /api/parts
+// ─── GET /api/parts/:id ───────────────────────────────────────────────────────
+// NOTE: keep this BELOW all literal-segment routes (/search, /barcode/*, /category/*)
+router.get('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const part = await prisma.part.findUnique({
+      where: { id: req.params.id },
+      select: {
+        id: true, sku: true, barcode: true, name: true, description: true,
+        sellingPrice: true, costPrice: true, quantity: true,
+        minQuantity: true, locationInStore: true,
+        brand:    { select: { id: true, name: true } },
+        category: { select: { id: true, name: true } },
+      },
+    });
+
+    if (!part) { res.status(404).json({ error: 'Part not found' }); return; }
+    res.json(serializePart(part));
+  } catch (error) {
+    console.error('Part detail error:', error);
+    res.status(500).json({ error: 'Failed to fetch part' });
+  }
+});
+
+// ─── GET /api/parts ───────────────────────────────────────────────────────────
 router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const page = parseInt(req.query.page as string) || 1;
+    const page  = parseInt(req.query.page  as string) || 1;
     const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
-    const skip = (page - 1) * limit;
-
-    const where: any = { isActive: true };
+    const skip  = (page - 1) * limit;
+    const where = { isActive: true };
 
     const [parts, total] = await Promise.all([
       prisma.part.findMany({
         where,
         select: {
-          id: true,
-          sku: true,
-          name: true,
-          sellingPrice: true,
-          quantity: true,
-          locationInStore: true,
-          brand: { select: { id: true, name: true } },
+          id: true, sku: true, name: true,
+          sellingPrice: true, quantity: true, locationInStore: true,
+          brand:    { select: { id: true, name: true } },
           category: { select: { id: true, name: true } },
         },
         skip,

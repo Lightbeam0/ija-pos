@@ -1,5 +1,3 @@
-
-// frontend/src/components/ReceiptModal.tsx
 import { useRef } from 'react';
 import { usePosStore } from '../store/usePosStore';
 import { useReactToPrint } from 'react-to-print';
@@ -16,6 +14,11 @@ export default function ReceiptModal() {
 
   if (!isReceiptOpen || !lastSale) return null;
 
+  // FIX: derive the tax label from the actual taxRate in the sale record
+  // instead of a hardcoded "8%". If the backend rate ever changes, the
+  // receipt stays correct automatically.
+  const taxLabel = `Tax (${Math.round(lastSale.taxRate * 100)}%)`;
+
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
       <div className="bg-gray-800 rounded-lg shadow-xl w-[400px] max-h-[80vh] flex flex-col">
@@ -31,7 +34,9 @@ export default function ReceiptModal() {
             <div className="text-center mb-4">
               <h3 className="text-lg font-bold">🏍️ IJA-POS</h3>
               <p className="text-xs text-gray-600">Motorcycle Parts</p>
-              <p className="text-xs text-gray-600 mt-1">{new Date(lastSale.createdAt).toLocaleString()}</p>
+              <p className="text-xs text-gray-600 mt-1">
+                {new Date(lastSale.createdAt).toLocaleString()}
+              </p>
               <p className="text-xs font-bold mt-1">{lastSale.invoiceNumber}</p>
             </div>
 
@@ -45,13 +50,34 @@ export default function ReceiptModal() {
             </div>
 
             <div className="text-xs space-y-0.5 mt-2">
-              <div className="flex justify-between"><span>Subtotal</span><span>${lastSale.subtotal.toFixed(2)}</span></div>
-              {lastSale.discountAmount > 0 && <div className="flex justify-between text-red-600"><span>Discount</span><span>-${lastSale.discountAmount.toFixed(2)}</span></div>}
-              <div className="flex justify-between"><span>Tax (8%)</span><span>${lastSale.taxAmount.toFixed(2)}</span></div>
-              <div className="flex justify-between font-bold text-sm border-t border-gray-300 pt-1 mt-1"><span>TOTAL</span><span>${lastSale.total.toFixed(2)}</span></div>
-              <div className="flex justify-between mt-1"><span>Payment</span><span className="capitalize">{lastSale.paymentMethod}</span></div>
-              {lastSale.paymentReceived && <div className="flex justify-between"><span>Received</span><span>${lastSale.paymentReceived.toFixed(2)}</span></div>}
-              {lastSale.changeGiven && lastSale.changeGiven > 0 && <div className="flex justify-between font-bold"><span>Change</span><span>${lastSale.changeGiven.toFixed(2)}</span></div>}
+              <div className="flex justify-between">
+                <span>Subtotal</span><span>${lastSale.subtotal.toFixed(2)}</span>
+              </div>
+              {lastSale.discountAmount > 0 && (
+                <div className="flex justify-between text-red-600">
+                  <span>Discount</span><span>-${lastSale.discountAmount.toFixed(2)}</span>
+                </div>
+              )}
+              {/* FIX: dynamic tax label — reads actual taxRate from sale */}
+              <div className="flex justify-between">
+                <span>{taxLabel}</span><span>${lastSale.taxAmount.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between font-bold text-sm border-t border-gray-300 pt-1 mt-1">
+                <span>TOTAL</span><span>${lastSale.total.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between mt-1">
+                <span>Payment</span><span className="capitalize">{lastSale.paymentMethod}</span>
+              </div>
+              {lastSale.paymentReceived != null && (
+                <div className="flex justify-between">
+                  <span>Received</span><span>${lastSale.paymentReceived.toFixed(2)}</span>
+                </div>
+              )}
+              {lastSale.changeGiven != null && lastSale.changeGiven > 0 && (
+                <div className="flex justify-between font-bold">
+                  <span>Change</span><span>${lastSale.changeGiven.toFixed(2)}</span>
+                </div>
+              )}
             </div>
 
             <div className="text-center text-xs text-gray-600 mt-4">
@@ -62,10 +88,16 @@ export default function ReceiptModal() {
         </div>
 
         <div className="p-4 border-t border-gray-700 flex gap-3">
-          <button onClick={() => handlePrint()} className="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+          <button
+            onClick={() => handlePrint()}
+            className="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+          >
             <Printer size={16} /> Print Receipt
           </button>
-          <button onClick={() => setReceiptOpen(false)} className="flex-1 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors">
+          <button
+            onClick={() => setReceiptOpen(false)}
+            className="flex-1 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors"
+          >
             Close
           </button>
         </div>

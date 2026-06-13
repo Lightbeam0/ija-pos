@@ -1,4 +1,3 @@
-// frontend/src/types/index.ts
 export interface User {
   id: string;
   name: string;
@@ -18,7 +17,7 @@ export interface Part {
   sellingPrice: number;
   quantity: number;
   locationInStore?: string;
-  brand?: { id: string; name: string };
+  brand?:    { id: string; name: string };
   category?: { id: string; name: string };
 }
 
@@ -28,6 +27,8 @@ export interface CartItem {
   name: string;
   quantity: number;
   unitPrice: number;
+  // FIX: added so the store can cap quantity at the available stock level
+  maxQuantity: number;
 }
 
 export interface Sale {

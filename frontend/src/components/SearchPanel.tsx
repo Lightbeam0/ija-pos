@@ -1,4 +1,3 @@
-// frontend/src/components/SearchPanel.tsx
 import { useEffect, useRef } from 'react';
 import { usePosStore } from '../store/usePosStore';
 import { api } from '../lib/api';
@@ -6,20 +5,26 @@ import { Search, Scan } from 'lucide-react';
 import PartCard from './PartCard';
 
 export default function SearchPanel() {
-  const { searchQuery, setSearchQuery, searchResults, setSearchResults, addToCart } = usePosStore();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const debounceRef = useRef<NodeJS.Timeout>();
+  const { searchQuery, setSearchQuery, searchResults, setSearchResults, addToCart } =
+    usePosStore();
+
+  const inputRef    = useRef<HTMLInputElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     inputRef.current?.focus();
+
+    // FIX: clear any pending debounce timer on unmount so the async callback
+    // doesn't call setSearchResults after the component is gone
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
   }, []);
 
   const handleSearch = (value: string) => {
     setSearchQuery(value);
 
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
-    }
+    if (debounceRef.current) clearTimeout(debounceRef.current);
 
     if (value.length < 2) {
       setSearchResults([]);
@@ -79,7 +84,6 @@ export default function SearchPanel() {
             <p className="text-sm mt-1">Try a different search term</p>
           </div>
         )}
-
         {searchResults.length === 0 && searchQuery.length < 2 && (
           <div className="text-center text-gray-500 mt-8">
             <Scan size={48} className="mx-auto mb-2 opacity-30" />
@@ -87,7 +91,6 @@ export default function SearchPanel() {
             <p className="text-sm mt-1">Type at least 2 characters to search</p>
           </div>
         )}
-
         <div className="grid grid-cols-2 gap-3">
           {searchResults.map((part) => (
             <PartCard key={part.id} part={part} onAdd={() => addToCart(part)} />
