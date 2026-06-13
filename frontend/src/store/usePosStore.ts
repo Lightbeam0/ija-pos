@@ -1,8 +1,7 @@
+// frontend/src/store/usePosStore.ts
 import { create } from 'zustand';
 import type { Part, CartItem, Sale } from '../types';
 
-// FIX: match backend TAX_RATE (0.12 = 12% Philippine VAT)
-// Previously hardcoded to 0.08 while .env had TAX_RATE=0.12
 const TAX_RATE = 0.12;
 
 interface PosStore {
@@ -10,6 +9,9 @@ interface PosStore {
   user: { id: string; name: string; role: string } | null;
   setAuth:  (token: string, user: { id: string; name: string; role: string }) => void;
   logout:   () => void;
+
+  currentView: 'pos' | 'inventory';
+  setView: (view: 'pos' | 'inventory') => void;
 
   cart:           CartItem[];
   addToCart:      (part: Part) => void;
@@ -54,6 +56,11 @@ export const usePosStore = create<PosStore>((set, get) => ({
     set({ token: null, user: null, cart: [], lastSale: null });
   },
 
+  // ── Navigation ──────────────────────────────────────────────────────────
+
+  currentView: 'pos',
+  setView: (view) => set({ currentView: view }),
+
   // ── Cart ──────────────────────────────────────────────────────────────────
 
   cart: [],
@@ -63,7 +70,6 @@ export const usePosStore = create<PosStore>((set, get) => ({
     const existing = cart.find(item => item.partId === part.id);
 
     if (existing) {
-      // FIX: cap at available stock — was silently allowing over-quantity
       if (existing.quantity >= part.quantity) return;
       set({
         cart: cart.map(item =>
@@ -73,7 +79,7 @@ export const usePosStore = create<PosStore>((set, get) => ({
         ),
       });
     } else {
-      if (part.quantity === 0) return; // out of stock guard
+      if (part.quantity === 0) return;
       set({
         cart: [
           ...cart,
@@ -83,7 +89,7 @@ export const usePosStore = create<PosStore>((set, get) => ({
             name:        part.name,
             quantity:    1,
             unitPrice:   part.sellingPrice,
-            maxQuantity: part.quantity, // FIX: store stock ceiling
+            maxQuantity: part.quantity,
           },
         ],
       });
@@ -101,7 +107,6 @@ export const usePosStore = create<PosStore>((set, get) => ({
     set({
       cart: get().cart.map(item => {
         if (item.partId !== partId) return item;
-        // FIX: cap at maxQuantity so cashier can't exceed available stock
         const capped = Math.min(quantity, item.maxQuantity);
         return { ...item, quantity: capped };
       }),

@@ -1,15 +1,13 @@
+// frontend/src/App.tsx
 import { useEffect } from 'react';
 import { usePosStore } from './store/usePosStore';
 import { api } from './lib/api';
 import LoginScreen from './components/LoginScreen';
 import PosScreen from './components/PosScreen';
-
-// FIX: removed import of App.css — the file was entirely Vite scaffold
-// boilerplate (.hero, #next-steps, .ticks etc.) with no relation to this
-// project. Tailwind handles all styling via index.css.
+import InventoryScreen from './components/inventory/InventoryScreen';
 
 function App() {
-  const { token, setAuth, logout } = usePosStore();
+  const { token, currentView, setAuth, logout } = usePosStore();
 
   useEffect(() => {
     const savedToken = localStorage.getItem('token');
@@ -21,6 +19,7 @@ function App() {
   }, []);
 
   if (!token) return <LoginScreen />;
+  if (currentView === 'inventory') return <InventoryScreen />;
   return <PosScreen />;
 }
 

@@ -1,3 +1,4 @@
+// frontend/src/types/index.ts
 export interface User {
   id: string;
   name: string;
@@ -21,13 +22,45 @@ export interface Part {
   category?: { id: string; name: string };
 }
 
+export interface PartDetail extends Part {
+  description?: string;
+  costPrice: number;
+  minQuantity: number;
+  isActive: boolean;
+}
+
+export interface CreatePartInput {
+  sku: string;
+  barcode?: string | null;
+  name: string;
+  description?: string | null;
+  brandId?: string | null;
+  categoryId?: string | null;
+  costPrice: number;
+  sellingPrice: number;
+  quantity?: number;
+  minQuantity?: number;
+  locationInStore?: string | null;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  sortOrder: number;
+}
+
+export interface Brand {
+  id: string;
+  name: string;
+}
+
 export interface CartItem {
   partId: string;
   sku: string;
   name: string;
   quantity: number;
   unitPrice: number;
-  // FIX: added so the store can cap quantity at the available stock level
   maxQuantity: number;
 }
 
@@ -63,4 +96,21 @@ export interface DashboardData {
   transactionCount: number;
   averageTransaction: number;
   lowStockCount: number;
+}
+
+export interface PaginatedResponse<T> {
+  parts: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface StockAdjustResponse {
+  id: string;
+  sku: string;
+  name: string;
+  quantity: number;
 }

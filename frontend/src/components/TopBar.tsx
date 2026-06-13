@@ -2,10 +2,10 @@
 import { useEffect, useState } from 'react';
 import { usePosStore } from '../store/usePosStore';
 import { api } from '../lib/api';
-import { LogOut } from 'lucide-react';
+import { LogOut, Package } from 'lucide-react';
 
 export default function TopBar() {
-  const { user, logout } = usePosStore();
+  const { user, logout, currentView, setView } = usePosStore();
   const [time, setTime] = useState(new Date());
   const [lowStockCount, setLowStockCount] = useState(0);
 
@@ -33,6 +33,17 @@ export default function TopBar() {
     <div className="bg-gray-800 border-b border-gray-700 px-4 py-2 flex items-center justify-between">
       <div className="flex items-center gap-4">
         <h1 className="text-xl font-bold">🏍️ IJA-POS</h1>
+        
+        {user?.role === 'admin' && (
+          <button
+            onClick={() => setView(currentView === 'pos' ? 'inventory' : 'pos')}
+            className="text-sm text-gray-300 hover:text-white flex items-center gap-1 transition-colors"
+          >
+            <Package size={16} />
+            {currentView === 'inventory' ? 'Back to POS' : 'Inventory'}
+          </button>
+        )}
+
         {lowStockCount > 0 && (
           <span className="bg-amber-600 text-white text-xs px-2 py-1 rounded-full font-semibold">
             {lowStockCount} Low Stock

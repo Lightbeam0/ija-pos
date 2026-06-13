@@ -1,3 +1,4 @@
+// frontend/src/components/ReceiptModal.tsx
 import { useRef } from 'react';
 import { usePosStore } from '../store/usePosStore';
 import { useReactToPrint } from 'react-to-print';

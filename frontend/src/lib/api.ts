@@ -1,3 +1,4 @@
+// frontend/src/lib/api.ts
 const API_BASE = '/api';
 
 async function request(endpoint: string, options: RequestInit = {}) {
@@ -42,7 +43,38 @@ export const api = {
     getById:      (id: string)               => request(`/parts/${id}`),
     getByCategory:(categoryId: string, page = 1, limit = 50) =>
       request(`/parts/category/${categoryId}?page=${page}&limit=${limit}`),
-    list:         (page = 1, limit = 50)     => request(`/parts?page=${page}&limit=${limit}`),
+    list:         (page = 1, limit = 50, includeInactive = false) =>
+      request(`/parts?page=${page}&limit=${limit}${includeInactive ? '&includeInactive=true' : ''}`),
+    create: (data: {
+      sku: string;
+      barcode?: string;
+      name: string;
+      description?: string;
+      brandId?: string;
+      categoryId?: string;
+      costPrice: number;
+      sellingPrice: number;
+      quantity?: number;
+      minQuantity?: number;
+      locationInStore?: string;
+    }) => request('/parts', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: {
+      sku?: string;
+      barcode?: string;
+      name?: string;
+      description?: string;
+      brandId?: string;
+      categoryId?: string;
+      costPrice?: number;
+      sellingPrice?: number;
+      quantity?: number;
+      minQuantity?: number;
+      locationInStore?: string;
+    }) => request(`/parts/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    adjustStock: (id: string, adjustment: number, reason?: string) =>
+      request(`/parts/${id}/stock`, { method: 'PATCH', body: JSON.stringify({ adjustment, reason }) }),
+    deactivate: (id: string) =>
+      request(`/parts/${id}`, { method: 'DELETE' }),
   },
 
   sales: {
@@ -54,8 +86,6 @@ export const api = {
       notes?:          string;
     }) => request('/sales', { method: 'POST', body: JSON.stringify(data) }),
     getById: (id: string) => request(`/sales/${id}`),
-    // FIX: removed todaySummary() — it duplicated api.dashboard.today()
-    // and was never used anywhere in the frontend.
   },
 
   dashboard: {
@@ -67,5 +97,17 @@ export const api = {
     list:   ()                                                    => request('/users'),
     create: (data: { name: string; pin: string; role?: string }) =>
       request('/users', { method: 'POST', body: JSON.stringify(data) }),
+  },
+
+  categories: {
+    list:   () => request('/categories'),
+    create: (name: string, sortOrder?: number) =>
+      request('/categories', { method: 'POST', body: JSON.stringify({ name, sortOrder }) }),
+  },
+
+  brands: {
+    list:   () => request('/brands'),
+    create: (name: string) =>
+      request('/brands', { method: 'POST', body: JSON.stringify({ name }) }),
   },
 };
